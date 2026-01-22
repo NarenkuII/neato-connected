@@ -1,33 +1,18 @@
-# !!! WHAT YOU WILL NEED TO CHANGE !!!
-# If you need any help, don't hesitate to ask for it in the discord or discussions!
 
-# platform, based on https://esphome.io/components/#supported-microcontrollers 
 esp32:
   board: esp32dev
   framework:
     type: esp-idf
 
-# You will need to figure out which pins work on your board for UART.
 substitutions:
-  uart_tx: <SET BASED ON YOUR DEVICE>
-# THIS IS A BETA VERSION! IT MAY BE UNSABLE OR NOT WORKING, FOR THE LATEST PLEASE DOWNLOAD FROM RELEASES!
-  uart_rx: <SET BASED ON YOUR DEVICE>
+ 
+  uart_tx: GPIO17
+  uart_rx: GPIO16
 
-# If you want to have access via the webserver, uncomment the following 2 lines (remove the #)
-#web_server:
-#  port: 80
+improv_serial:
 
 esphome:
-  name: neato-vacuum # If you want another name, change it here, remeber to replace it in the ha-card.yaml!
-##############################################################################################################################
-
-
-
-#   Combatability between esphome config and this card is ensured as long as the
-#   major version's match, for relase candicates, betas etc (indicated by X.X-a/b/rc.X), the version
-#   has to match perfectly otherwise compatability is not promised. 
-#
-#   Please try to keep the versions the same, and check the github for updates!
+  name: neato-vacuum
   project: 
     name: philip2809.neato-connected
     version: "1.1.1"
@@ -42,19 +27,21 @@ esphome:
       then:
         - lambda: !lambda |-
             id(uiState).publish_state("Starting...");
-
             ESPTime t = ESPTime::from_epoch_local(id(g_last_cleaning_start_time));
             std::string ts = t.strftime("%Y-%m-%d %H:%M:%S");
             id(last_cleaning_time).publish_state(ts.c_str());
-
             if (id(g_last_cleaning_type) == 0) {
               id(last_cleaning_type).publish_state("HOUSE");
             } else if (id(g_last_cleaning_type) == 1) {
               id(last_cleaning_type).publish_state("SPOT");
             }
-
             id(last_cleaning_duration).publish_state(id(g_last_cleaning_duration));
 
+
+web_server:
+  port: 80
+
+       
 script:
   - id: get_user_settings
     mode: queued
@@ -148,7 +135,6 @@ interval:
 api:
   encryption:
     key: !secret neato_vacuum_api
-
   actions:
     - action: send_cmd
       variables:
@@ -175,19 +161,23 @@ api:
             // convert string → vector<uint8_t>
             return std::vector<uint8_t>(s.begin(), s.end());
 
+# --- NETWORKING & SECURITY ---
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+
+
 ota:
   - platform: esphome
     password: !secret neato_vacuum_ota
 
 
-wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
-  # If your router sets another TLD for local devices, specify that here
-  #domain: .<whatever you are using, e.g. lan>
 
 logger:
-  baud_rate: 0
+  level: DEBUG
+  baud_rate: 115200  # Must be > 0 for improv_serial to work
+  hardware_uart: UART0 # This sends logs to the USB cable only
 
 uart:
   id: uart_bus
@@ -832,6 +822,49 @@ switch:
       - script.execute: get_user_settings
     entity_category: "diagnostic"
 
+  - platform: template
+    name: "Manual Vacuum"
+    id: manual_vacuum_switch
+    icon: mdi:air-filter
+    optimistic: true
+    turn_on_action:
+      - uart.write: !lambda |-
+          std::string s = "SetMotor VacuumOn VacuumSpeed " + std::to_string((int)id(manual_vacuum_speed).state) + "\n";
+          return std::vector<uint8_t>(s.begin(), s.end());
+    turn_off_action:
+      - uart.write: "SetMotor VacuumOff \n"
+
+  ########################################## added myself(Narenku)    
+
+  # --- MANUAL MAIN BRUSH ---
+  - platform: template
+    name: "Manual Main Brush"
+    id: manual_brush_switch
+    icon: mdi:brush
+    optimistic: true
+    turn_on_action:
+      - uart.write: "SetMotor BrushEnable \n"
+      - delay: 200ms
+      - uart.write: !lambda |-
+          std::string s = "SetMotor Brush RPM " + std::to_string((int)id(manual_brush_rpm).state) + "\n";
+          return std::vector<uint8_t>(s.begin(), s.end());
+    turn_off_action:
+      - uart.write: "SetMotor BrushDisable \n"
+
+  # --- MANUAL SIDE BRUSH ---
+  - platform: template
+    name: "Manual Side Brush"
+    id: manual_side_brush_switch
+    icon: mdi:brush-variant
+    optimistic: true
+    turn_on_action:
+      - uart.write: "SetMotor SideBrushEnable \n"
+      - delay: 200ms
+      # 1000mW is a standard power level for the side brush
+      - uart.write: "SetMotor SideBrushOn SideBrushPower 1000 \n"
+    turn_off_action:
+      - uart.write: "SetMotor SideBrushDisable \n"
+########################################## 
 
 number:
   # --- Spot cleaning ---
@@ -855,7 +888,113 @@ number:
     name: Spot Clean Height
     optimistic: true
 
+  ########################################## added myself(Narenku)
+  - platform: template
+    id: manual_step_dist
+    name: "Manual Step Distance"
+    min_value: 50
+    max_value: 1000
+    step: 50
+    initial_value: 300
+    unit_of_measurement: mm
+    mode: BOX
+    entity_category: "config"
+    optimistic: true
 
+  - platform: template
+    id: manual_turn_degrees
+    name: "Manual Turn Angle"
+    min_value: 10
+    max_value: 180
+    step: 5
+    initial_value: 45
+    unit_of_measurement: "°"
+    mode: SLIDER
+    entity_category: "config"
+    optimistic: true
+
+  - platform: template
+    id: manual_speed
+    name: "Manual Drive Speed"
+    min_value: 50
+    max_value: 300
+    step: 10
+    initial_value: 150
+    unit_of_measurement: mm/s
+    mode: SLIDER
+    entity_category: "config"
+    optimistic: true
+
+
+  - platform: template
+    id: manual_vacuum_speed
+    name: "Manual Vacuum Power"
+    min_value: 0
+    max_value: 100
+    step: 5
+    initial_value: 90
+    unit_of_measurement: "%"
+    mode: SLIDER
+    entity_category: "config"
+    optimistic: true
+    # Update speed immediately if the switch is already on
+    set_action:
+      then:
+        - if:
+            condition:
+              switch.is_on: manual_vacuum_switch
+            then:
+               - uart.write: !lambda |-
+                   std::string s = "SetMotor VacuumOn VacuumSpeed " + std::to_string((int)x) + "\n";
+                   return std::vector<uint8_t>(s.begin(), s.end());
+
+  - platform: template
+    id: manual_brush_rpm
+    name: "Manual Brush RPM"
+    min_value: 800
+    max_value: 1400
+    step: 100
+    initial_value: 1200
+    unit_of_measurement: "RPM"
+    mode: SLIDER
+    entity_category: "config"
+    optimistic: true
+    # Update RPM immediately if the switch is already on
+    set_action:
+      then:
+        - if:
+            condition:
+              switch.is_on: manual_brush_switch
+            then:
+               - uart.write: !lambda |-
+                   std::string s = "SetMotor Brush RPM " + std::to_string((int)x) + "\n";
+                   return std::vector<uint8_t>(s.begin(), s.end());
+    ##########################################
+
+########################################## added myself(Narenku)
+text:
+  - platform: template
+    name: "Send Command"
+    id: command_injector
+    icon: mdi:console-line
+    mode: text
+    optimistic: true
+    set_action:
+      then:
+        - uart.write: !lambda |-
+            std::string cmd = x;
+            // Add newline if missing
+            if (cmd.empty() || cmd.back() != '\n') cmd += "\n";
+            return std::vector<uint8_t>(cmd.begin(), cmd.end());
+        - logger.log: 
+            format: "Custom Command Sent: %s"
+            args: [ 'x.c_str()' ]
+        # Optional: Clear the text box after 1 second so it is ready for new commands
+        - delay: 1s
+        - text.set:
+            id: command_injector
+            value: ""
+##########################################
 select:
   - platform: template
     name: "Navigation Mode"
@@ -963,4 +1102,73 @@ button:
 
   - platform: restart
     name: Reboot ESP
+
+ ########################################## added myself(Narenku)
+
+
+  - platform: template
+    name: "Manual Forward"
+    icon: mdi:arrow-up-bold
+    on_press:
+      - uart.write: !lambda |-
+          int dist = (int)id(manual_step_dist).state;
+          int speed = (int)id(manual_speed).state;
+          // Both wheels forward
+          std::string s = "SetMotor LWheelDist " + std::to_string(dist) + " RWheelDist " + std::to_string(dist) + " Speed " + std::to_string(speed) + "\n";
+          return std::vector<uint8_t>(s.begin(), s.end());
+
+  - platform: template
+    name: "Manual Reverse"
+    icon: mdi:arrow-down-bold
+    on_press:
+      - uart.write: !lambda |-
+          int dist = (int)id(manual_step_dist).state;
+          int speed = (int)id(manual_speed).state;
+          // Both wheels negative distance
+          std::string s = "SetMotor LWheelDist " + std::to_string(-dist) + " RWheelDist " + std::to_string(-dist) + " Speed " + std::to_string(speed) + "\n";
+          return std::vector<uint8_t>(s.begin(), s.end());
+
+  - platform: template
+    name: "Manual Left"
+    icon: mdi:arrow-left-bold
+    on_press:
+      - uart.write: !lambda |-
+          // Neato approx: 3mm wheel distance = 1 degree of rotation
+          int degrees = (int)id(manual_turn_degrees).state;
+          int dist = degrees * 2; 
+          int speed = (int)id(manual_speed).state;
+          // Left Turn: Left Wheel Back (-), Right Wheel Forward (+)
+          std::string s = "SetMotor LWheelDist " + std::to_string(-dist) + " RWheelDist " + std::to_string(dist) + " Speed " + std::to_string(speed) + "\n";
+          return std::vector<uint8_t>(s.begin(), s.end());
+
+  - platform: template
+    name: "Manual Right"
+    icon: mdi:arrow-right-bold
+    on_press:
+      - uart.write: !lambda |-
+          int degrees = (int)id(manual_turn_degrees).state;
+          int dist = degrees * 2; 
+          int speed = (int)id(manual_speed).state;
+          // Right Turn: Left Wheel Forward (+), Right Wheel Back (-)
+          std::string s = "SetMotor LWheelDist " + std::to_string(dist) + " RWheelDist " + std::to_string(-dist) + " Speed " + std::to_string(speed) + "\n";
+          return std::vector<uint8_t>(s.begin(), s.end());
+
+  - platform: template
+    name: "Manual STOP"
+    icon: mdi:octagon-outline
+    on_press:
+      - uart.write: "SetMotor LWheelDist 0 RWheelDist 0 Speed 0 \n"
+
+
+  - platform: template
+    name: "Manual Turn 180"
+    icon: mdi:rotate-3d-variant
+    on_press:
+      - uart.write: !lambda |-
+          // Marius says 400mm split is ~180 degrees
+          // Using Speed 80 as recommended for large turns
+          return std::vector<uint8_t>(std::string("SetMotor LWheelDist 400 RWheelDist -400 Speed 80 \n").begin(), std::string("SetMotor LWheelDist 512 RWheelDist -512 Speed 80 \n").end());
+
+
+  ##########################################
     
