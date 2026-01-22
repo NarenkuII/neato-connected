@@ -7,7 +7,7 @@ This fork extends the original project with specific enhancements for manual con
     * **Cleaning Tools:** Individual toggles and speed sliders for the Vacuum, Main Brush, and Side Brush (requires Test Mode).
 * **Custom Commands:** Added a text input field to inject raw serial commands directly to the robot.
 * **Localization:** The Home Assistant card configuration has been fully translated into **French**.
-* **Code Generation:** Portions of the manual control logic and YAML configurations were generated with the assistance of **Google Gemini**.
+* **Code Generation:** Portions of the manual control logic and YAML configurations were generated with the assistance of **Google Gemini** 3 pro .
 
 ---
 [![release][release-badge]][release-url]
