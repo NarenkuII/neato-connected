@@ -1,14 +1,7 @@
-# THIS IS A BETA VERSION! IT MAY BE UNSABLE OR NOT WORKING, FOR THE LATEST PLEASE DOWNLOAD FROM RELEASES!
 type: vertical-stack
 variables:
-  NOTE: >
-    Combatability between esphome config and this card is ensured as long as the
-    major version's match, for relase candicates, betas etc (indicated by
-    X.X-a/b/rc.X), the version has to match perfectly otherwise compatability is
-    not promised. Please try to keep the versions the same, and check the github
-    for updates!
   project: philip2809.neato-connected
-  version: "1.1.1"
+  version: 1.1.1.1
 cards:
   - type: custom:button-card
     variables:
@@ -26,20 +19,17 @@ cards:
     name: |
       [[[ 
         const uiState = states[`sensor.${variables.robot_id}_ui_state`]?.state || '';
-        if (uiState.includes('STATE_IDLE')) return 'IDLE';
-        else if (uiState.includes('STATE_STANDBY')) return 'STANDBY';
-        else if (uiState.includes('STATE_TESTMODE')) return 'Testmode on!';
-        else if (uiState.includes('STATE_USB_LOGCOPY')) return 'Copying logs to USB';
-
-        else if (uiState.includes('STATE_STARTHOUSECLEANING')) return 'Starting House Cleaning';
-        else if (uiState.includes('STATE_HOUSECLEANINGRUNNING')) return 'Cleaning House';
-        else if (uiState.includes('STATE_HOUSECLEANINGPAUSED')) return 'House Cleaning Paused';
-
-        else if (uiState.includes('STATE_STARTSPOTCLEANING')) return 'Starting Spot Clean';
-        else if (uiState.includes('STATE_SPOTCLEANINGRUNNING')) return 'Spot Cleaning';
-        else if (uiState.includes('STATE_SPOTCLEANINGPAUSED')) return 'Spot Cleaning Paused';
-
-        else return uiState || 'Unknown';
+        if (uiState.includes('STATE_IDLE')) return 'Inactif';
+        else if (uiState.includes('STATE_STANDBY')) return 'Veille';
+        else if (uiState.includes('STATE_TESTMODE')) return 'Mode test activé !';
+        else if (uiState.includes('STATE_USB_LOGCOPY')) return 'Copie des journaux sur USB';
+        else if (uiState.includes('STATE_STARTHOUSECLEANING')) return 'Démarrage du nettoyage complet';
+        else if (uiState.includes('STATE_HOUSECLEANINGRUNNING')) return 'Nettoyage complet en cours';
+        else if (uiState.includes('STATE_HOUSECLEANINGPAUSED')) return 'Nettoyage complet en pause';
+        else if (uiState.includes('STATE_STARTSPOTCLEANING')) return 'Démarrage du nettoyage ciblé';
+        else if (uiState.includes('STATE_SPOTCLEANINGRUNNING')) return 'Nettoyage ciblé en cours';
+        else if (uiState.includes('STATE_SPOTCLEANINGPAUSED')) return 'Nettoyage ciblé en pause';
+        else return uiState || 'Inconnu';
       ]]]
     styles:
       icon:
@@ -103,9 +93,9 @@ cards:
       dock: |
         [[[ 
           if (states[`binary_sensor.${variables.robot_id}_ext_power_present`]?.state === 'on') {
-            return 'DOCKED';
+            return 'SUR BASE';
           } else {
-            return 'sdfsdf';
+            return '';
           }
         ]]]
     extra_styles: |
@@ -139,7 +129,7 @@ cards:
             name: |
               [[[ 
                 const alert = states[`sensor.${variables.robot_id}_robot_alert`]?.state || '';
-                if (alert.startsWith('200')) return 'No alerts';
+                if (alert.startsWith('200')) return 'Aucune alerte';
                 try { return alert.match(/\(UI_(ERROR|ALERT)_(.+)\)/)[2].replaceAll('_',' '); }
                 catch { return alert; }
               ]]]
@@ -159,7 +149,7 @@ cards:
             name: |
               [[[ 
                 const err = states[`sensor.${variables.robot_id}_robot_error`]?.state || '';
-                if (err.startsWith('200')) return 'No errors';
+                if (err.startsWith('200')) return 'Aucune erreur';
                 try { return err.match(/\(UI_(ERROR|ALERT)_(.+)\)/)[2].replaceAll('_',' '); }
                 catch { return err; }
               ]]]
@@ -186,7 +176,7 @@ cards:
           variables:
             robot_id: neato_vacuum
           entity: "[[[ return `button.${variables.robot_id}_house_clean`; ]]]"
-          name: Clean
+          name: Nettoyer
           tap_action:
             action: toggle
       - type: conditional
@@ -204,7 +194,7 @@ cards:
           variables:
             robot_id: neato_vacuum
           entity: "[[[ return `button.${variables.robot_id}_resume_cleaning`; ]]]"
-          name: Resume
+          name: Reprendre
           tap_action:
             action: toggle
       - type: conditional
@@ -246,7 +236,7 @@ cards:
           variables:
             robot_id: neato_vacuum
           entity: "[[[ return `button.${variables.robot_id}_spot_clean`; ]]]"
-          name: Spot Clean
+          name: Zone
           tap_action:
             action: toggle
           hold_action:
@@ -254,7 +244,7 @@ cards:
             browser_mod:
               service: browser_mod.popup
               data:
-                title: Spot Clean - Height and Width
+                title: Nettoyage ciblé - Taille
                 size: normal
                 content:
                   type: vertical-stack
@@ -262,14 +252,14 @@ cards:
                     - type: entities
                       entities:
                         - entity: number.neato_vacuum_spot_clean_height
-                          name: Height
+                          name: Hauteur
                           icon: mdi:arrow-up-down
                         - entity: number.neato_vacuum_spot_clean_width
-                          name: Width
+                          name: Largeur
                           icon: mdi:arrow-left-right
                     - type: custom:button-card
                       size: 20%
-                      name: Start Spot Cleaning
+                      name: Démarrer le nettoyage ciblé
                       entity: button.neato_vacuum_spot_clean_height_width
                       tap_action:
                         action: toggle
@@ -294,27 +284,156 @@ cards:
           variables:
             robot_id: neato_vacuum
           entity: "[[[ return `button.${variables.robot_id}_stop_cleaning`; ]]]"
-          name: STOP
+          name: ARRÊT
           tap_action:
             action: toggle
+  - type: horizontal-stack
+    cards:
       - type: custom:button-card
         variables:
           robot_id: neato_vacuum
         entity: "[[[ return `button.${variables.robot_id}_locate_robot`; ]]]"
-        name: Locate
+        name: Localiser
         tap_action:
           action: toggle
       - type: custom:button-card
         variables:
           robot_id: neato_vacuum
-        name: Settings
+        name: Manuel
+        icon: mdi:controller-classic
+        tap_action:
+          action: fire-dom-event
+          browser_mod:
+            service: browser_mod.popup
+            data:
+              title: Contrôle Manuel
+              size: normal
+              content:
+                type: vertical-stack
+                cards:
+                  - type: markdown
+                    content: >
+                      **Attention:** Vous devez activer le **Mode Test** pour
+                      utiliser les commandes manuelles. Le robot ne nettoiera
+                      pas automatiquement tant que ce mode est actif.
+                  - type: entities
+                    entities:
+                      - entity: switch.neato_vacuum_test_mode
+                        name: Mode Test (Requis)
+                  - type: conditional
+                    conditions:
+                      - condition: state
+                        entity: switch.neato_vacuum_test_mode
+                        state: "on"
+                    card:
+                      type: vertical-stack
+                      cards:
+                        - type: entities
+                          entities:
+                            - entity: number.neato_vacuum_manual_step_distance
+                              name: Distance pas à pas (mm)
+                            - entity: number.neato_vacuum_manual_turn_angle
+                              name: Angle de virage (deg)
+                            - entity: number.neato_vacuum_manual_drive_speed
+                              name: Vitesse de déplacement
+                        - type: horizontal-stack
+                          cards:
+                            - type: custom:button-card
+                              color_type: blank-card
+                            - type: custom:button-card
+                              entity: button.neato_vacuum_manual_forward
+                              icon: mdi:arrow-up-bold
+                              name: Avancer
+                              tap_action:
+                                action: call-service
+                                service: button.press
+                                service_data:
+                                  entity_id: button.neato_vacuum_manual_forward
+                            - type: custom:button-card
+                              color_type: blank-card
+                        - type: horizontal-stack
+                          cards:
+                            - type: custom:button-card
+                              entity: button.neato_vacuum_manual_left
+                              icon: mdi:arrow-left-bold
+                              name: Gauche
+                              tap_action:
+                                action: call-service
+                                service: button.press
+                                service_data:
+                                  entity_id: button.neato_vacuum_manual_left
+                            - type: custom:button-card
+                              entity: button.neato_vacuum_manual_stop
+                              icon: mdi:stop
+                              name: STOP
+                              color: red
+                              tap_action:
+                                action: call-service
+                                service: button.press
+                                service_data:
+                                  entity_id: button.neato_vacuum_manual_stop
+                            - type: custom:button-card
+                              entity: button.neato_vacuum_manual_right
+                              icon: mdi:arrow-right-bold
+                              name: Droite
+                              tap_action:
+                                action: call-service
+                                service: button.press
+                                service_data:
+                                  entity_id: button.neato_vacuum_manual_right
+                        - type: horizontal-stack
+                          cards:
+                            - type: custom:button-card
+                              entity: button.neato_vacuum_manual_turn_180
+                              icon: mdi:rotate-3d-variant
+                              name: 180°
+                              tap_action:
+                                action: call-service
+                                service: button.press
+                                service_data:
+                                  entity_id: button.neato_vacuum_manual_turn_180
+                            - type: custom:button-card
+                              entity: button.neato_vacuum_manual_reverse
+                              icon: mdi:arrow-down-bold
+                              name: Reculer
+                              tap_action:
+                                action: call-service
+                                service: button.press
+                                service_data:
+                                  entity_id: button.neato_vacuum_manual_reverse
+                            - type: custom:button-card
+                              color_type: blank-card
+                        - type: entities
+                          title: Outils de nettoyage
+                          entities:
+                            - entity: switch.neato_vacuum_manual_vacuum
+                              name: Aspiration
+                            - entity: number.neato_vacuum_manual_vacuum_power
+                              name: Puissance Aspiration (%)
+                            - type: divider
+                            - entity: switch.neato_vacuum_manual_main_brush
+                              name: Brosse Principale
+                            - entity: number.neato_vacuum_manual_brush_rpm
+                              name: Vitesse Brosse (RPM)
+                            - type: divider
+                            - entity: switch.neato_vacuum_manual_side_brush
+                              name: Brosse Latérale
+                        - type: entities
+                          entities:
+                            - entity: text.neato_vacuum_send_command
+                              name: Injecter une commande
+                              icon: mdi:console
+      - type: custom:button-card
+        variables:
+          robot_id: neato_vacuum
+        name: Paramètres
         icon: mdi:cog
         tap_action:
           action: fire-dom-event
           browser_mod:
             service: browser_mod.popup
             data:
-              title: More options
+              title: Plus d'options
               size: normal
               content:
                 type: vertical-stack
@@ -326,19 +445,19 @@ cards:
                         entity: >-
                           [[[ return `switch.${variables.robot_id}_eco_mode`;
                           ]]]
-                        name: ECO Mode
+                        name: Mode ÉCO
                         type: button
                       - show_name: true
                         show_icon: true
                         entity: >-
                           [[[ return `switch.${variables.robot_id}_test_mode`;
                           ]]]
-                        name: Test Mode
+                        name: Mode Test
                         type: button
                       - entity: >-
                           [[[ return
                           `button.${variables.robot_id}_update_status`; ]]]
-                        name: Fetch status
+                        name: Actualiser
                         show_icon: true
                         type: button
                         tap_action:
@@ -355,11 +474,11 @@ cards:
                       - entity: >-
                           [[[ return
                           `select.${variables.robot_id}_navigation_mode`; ]]]
-                        name: Navigation Mode
+                        name: Mode de Navigation
                       - entity: >-
                           [[[ return
                           `switch.${variables.robot_id}_intenseclean`; ]]]
-                        name: Intense Clean
+                        name: Nettoyage Intensif
                       - entity: "[[[ return `switch.${variables.robot_id}_led`; ]]]"
                         name: LED
                       - entity: "[[[ return `switch.${variables.robot_id}_wifi`; ]]]"
@@ -367,33 +486,33 @@ cards:
                       - entity: >-
                           [[[ return `switch.${variables.robot_id}_wall_enable`;
                           ]]]
-                        name: Wall Follower
+                        name: Suivi de mur
                       - entity: >-
                           [[[ return
                           `switch.${variables.robot_id}_melody_sounds`; ]]]
-                        name: Melody Sounds
+                        name: Mélodies
                       - entity: >-
                           [[[ return
                           `switch.${variables.robot_id}_warning_sounds`; ]]]
-                        name: Warning Sounds
+                        name: Alertes sonores
                       - entity: >-
                           [[[ return
                           `switch.${variables.robot_id}_click_sounds`; ]]]
-                        name: Click Sounds
+                        name: Sons de clic
                       - entity: >-
                           [[[ return
                           `switch.${variables.robot_id}_bin_full_detect`; ]]]
-                        name: Bin Full Detect
+                        name: Détection bac plein
                       - entity: >-
                           [[[ return `switch.${variables.robot_id}_schedule`;
                           ]]]
-                        name: Schedule
+                        name: Programmation
                     state_color: false
                     show_header_toggle: false
                   - type: entities
                     entities:
                       - entity: "[[[ return `sensor.${variables.robot_id}_model`;]]]"
-                        name: Model
+                        name: Modèle
                       - entity: >-
                           [[[ return
                           `sensor.${variables.robot_id}_serial_number`;]]]
@@ -401,34 +520,34 @@ cards:
                       - entity: >-
                           [[[ return
                           `sensor.${variables.robot_id}_time_local`;]]]
-                        name: Robot Time
+                        name: Heure du Robot
                       - entity: >-
                           [[[ return
                           `sensor.${variables.robot_id}_battery_voltage_v`;]]]
-                        name: Battery Voltage
+                        name: Tension Batterie
                       - entity: >-
                           [[[ return
                           `sensor.${variables.robot_id}_battery_temp_c_avg`;]]]
-                        name: Battery Temp (avg)
+                        name: Temp. Batterie (moy)
                       - entity: >-
                           [[[ return
                           `sensor.${variables.robot_id}_battery_cycles`;]]]
-                        name: Battery Cycles
+                        name: Cycles Batterie
                       - entity: >-
                           [[[ return
                           `sensor.${variables.robot_id}_charger_mah`;]]]
-                        name: Charging
+                        name: Intensité Charge
                       - entity: >-
                           [[[ return
                           `sensor.${variables.robot_id}_discharge_mah`;]]]
-                        name: Discharging
+                        name: Intensité Décharge
                   - type: horizontal-stack
                     cards:
                       - show_name: true
                         show_icon: true
                         entity: "[[[ return `button.${variables.robot_id}_shutdown`;]]]"
                         type: button
-                        name: Power Off
+                        name: Éteindre
                         tap_action:
                           action: toggle
                       - show_name: true
@@ -436,7 +555,7 @@ cards:
                         entity: >-
                           [[[ return
                           `button.${variables.robot_id}_powercycle`;]]]
-                        name: Reboot Robot
+                        name: Redémarrer Robot
                         type: button
                         tap_action:
                           action: toggle
@@ -446,6 +565,6 @@ cards:
                         entity: >-
                           [[[ return
                           `button.${variables.robot_id}_reboot_esp`;]]]
-                        name: Reboot ESP
+                        name: Redémarrer ESP
                         tap_action:
                           action: toggle
