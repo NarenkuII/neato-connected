@@ -1,4 +1,15 @@
+# Fork Features & Modifications
+This fork extends the original project with specific enhancements for manual control and localization:
 
+* **Manual Control Panel:** Added a full manual control interface via Home Assistant.
+    * **Drive Controls:** D-Pad for Forward, Backward, Left, Right, and Stop.
+    * **Calibration:** Added a calibration slider for the 180° turn feature to adjust for floor types.
+    * **Cleaning Tools:** Individual toggles and speed sliders for the Vacuum, Main Brush, and Side Brush (requires Test Mode).
+* **Custom Commands:** Added a text input field to inject raw serial commands directly to the robot.
+* **Localization:** The Home Assistant card configuration has been fully translated into **French**.
+* **Code Generation:** Portions of the manual control logic and YAML configurations were generated with the assistance of **Google Gemini**.
+
+---
 [![release][release-badge]][release-url]
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/V7V61PBIY6)
